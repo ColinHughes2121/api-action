@@ -1,0 +1,62 @@
+name: 'GoCreative AI — Agent API'
+description: 'Call 145+ pay-per-call AI/enrichment/scraping endpoints from any workflow. Pay in USDC (x402), API key, or use the free demo tier.'
+author: 'GoCreative AI'
+branding:
+  icon: 'zap'
+  color: 'purple'
+
+inputs:
+  endpoint:
+    description: 'API endpoint path under /v1/, e.g. "enrich/company", "scrape/amazon", "github/user". Full list at https://api.gocreativeai.com'
+    required: true
+  args:
+    description: 'JSON object of query/body parameters to pass to the endpoint. Example: ''{"domain":"stripe.com"}''.'
+    required: false
+    default: '{}'
+  method:
+    description: 'HTTP method (GET or POST). Defaults to GET.'
+    required: false
+    default: 'GET'
+  api_key:
+    description: 'Your GoCreative API key (paid tier). Get one at https://api.gocreativeai.com/start. If omitted, action falls back to the free demo tier (5 calls/day per runner IP).'
+    required: false
+    default: ''
+  wallet:
+    description: 'Your Base wallet address for x402 USDC pay-per-call. If supplied along with X402_PRIVATE_KEY env var, the action signs an x402 payment for any paywalled call. Wallet for receipts: 0xbAf55b24CA99bd7393B6e627093b13c6628b53Cc'
+    required: false
+    default: ''
+  output_file:
+    description: 'Path to write the JSON response to. If unset, output is only set as the `response` step output.'
+    required: false
+    default: ''
+  fail_on_error:
+    description: 'If true (default), the step fails on non-2xx responses. Set to false to allow workflows to inspect 4xx/5xx responses.'
+    required: false
+    default: 'true'
+
+outputs:
+  response:
+    description: 'Raw JSON response body from the API'
+    value: ${{ steps.call.outputs.response }}
+  status:
+    description: 'HTTP status code returned by the API'
+    value: ${{ steps.call.outputs.status }}
+  tier:
+    description: 'Which tier serviced the request: "paid", "x402", or "demo"'
+    value: ${{ steps.call.outputs.tier }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Call GoCreative AI API
+      id: call
+      shell: bash
+      env:
+        INPUT_ENDPOINT: ${{ inputs.endpoint }}
+        INPUT_ARGS: ${{ inputs.args }}
+        INPUT_METHOD: ${{ inputs.method }}
+        INPUT_API_KEY: ${{ inputs.api_key }}
+        INPUT_WALLET: ${{ inputs.wallet }}
+        INPUT_OUTPUT_FILE: ${{ inputs.output_file }}
+        INPUT_FAIL_ON_ERROR: ${{ inputs.fail_on_error }}
+      run: ${{ github.action_path }}/entrypoint.sh

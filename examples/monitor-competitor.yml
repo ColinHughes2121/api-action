@@ -1,0 +1,48 @@
+# Example: Daily snapshot of a competitor's pricing page + Amazon listing.
+# Opens a PR if anything changed. Cheap competitive intel on autopilot.
+
+name: Monitor competitor
+
+on:
+  schedule:
+    - cron: '0 9 * * *'  # 09:00 UTC daily
+  workflow_dispatch:
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Snapshot competitor pricing page
+        uses: gocreativeai/api-action@v1
+        with:
+          endpoint: scrape/url
+          args: '{"url": "https://competitor.example.com/pricing"}'
+          output_file: ./snapshots/competitor-pricing.json
+          api_key: ${{ secrets.GOCREATIVE_API_KEY }}
+
+      - name: Snapshot competitor Amazon listing
+        uses: gocreativeai/api-action@v1
+        with:
+          endpoint: scrape/amazon
+          args: '{"asin": "B0EXAMPLE"}'
+          output_file: ./snapshots/competitor-amazon.json
+          api_key: ${{ secrets.GOCREATIVE_API_KEY }}
+
+      - name: Open PR if anything changed
+        uses: peter-evans/create-pull-request@v6
+        with:
+          title: 'chore: competitor snapshot update'
+          commit-message: 'chore: refresh competitor snapshots'
+          branch: competitor-snapshot
+          body: |
+            Daily competitor snapshot diff. Review the JSON changes to spot:
+            - pricing changes
+            - new SKUs
+            - copy / positioning changes
+
+            Powered by [GoCreative AI](https://api.gocreativeai.com).
